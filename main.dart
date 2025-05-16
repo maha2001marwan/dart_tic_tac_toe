@@ -5,132 +5,134 @@ bool winner = false;
 bool isXturn = true;
 int moveCount = 0;
 List<String> values = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
-List<String> combinations = ['012', '048', '036', '147', '246', '258'];
+List<String> combinations = [
+  '012', // First row
+  '345', // Second row
+  '678', // Third row
+  '036', // First column
+  '147', // Second column
+  '258', // Third column
+  '048', // Diagonal 1
+  '246'  // Diagonal 2
+];
 
-// Run | Debug
 void main() {
+  print('Welcome to Tic Tac Toe!');
   startGame();
 }
 
+/// Initialize game state and start new game
 void startGame() {
   winner = false;
   isXturn = true;
   moveCount = 0;
   values = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  clearScreen();
   generateBoard();
-  getNextCharacter();
+  getNextMove();
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//check if a combination is true or false for a player (X or 0)
-bool checkCombination(String combination, String checkFor) {
-  //split the numbers in a list of integers
-  List<int> numbers = combination.split('').map((item) => int.parse(item)).toList();
-  bool match = false;
-  for (final item in numbers) {
-    if (values[item] == checkFor) {
-      match = true;
-    } else {
-      match = false;
-      break;
-    }
-  }
-  return match;
+/// Check if current combination matches player's marks
+bool checkCombination(String combination, String player) {
+  List<int> indexes = combination.split('').map((s) => int.parse(s)).toList();
+  return indexes.every((index) => values[index] == player);
 }
 
-////////////////////////////////////////////////////////////////////////////////
+/// Verify if current player has winning combination
 void checkWinner(String player) {
-  for (final item in combinations) {
-    bool combinationValidity = checkCombination(item, player);
-    if (combinationValidity == true) {
-      print('$player WON!');
+  for (String combo in combinations) {
+    if (checkCombination(combo, player)) {
       winner = true;
-      break;
+      print('$player WINS!');
+      return;
     }
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//get input, check winners
-void getNextCharacter() {
+/// Handle player input and game logic
+void getNextMove() {
   if (winner) {
-    print('Game Over!');
     askForRestart();
     return;
   }
 
-  print('Choose Number for ${isXturn == true ? "X" : "0"} :');
-  String? input = stdin.readLineSync();
+  if (moveCount == 9) {
+    print('DRAW!');
+    askForRestart();
+    return;
+  }
 
-  if (input != null) {
-    try {
-      int number = int.parse(input);
-      if (number >= 1 && number <= 9) {
-        if (values[number - 1] != 'X' && values[number - 1] != 'O') {
-          values[number - 1] = isXturn ? 'X' : '0';
-          isXturn = !isXturn;
-          moveCount++;
-          clearScreen();
-          generateBoard();
-
-          checkWinner('X');
-          checkWinner('0');
-
-          if (!winner && moveCount < 9) {
-            getNextCharacter();
-          } else if (!winner && moveCount == 9) {
-            print('DRAW!');
-            askForRestart();
-          } else if (winner) {
-            askForRestart();
-          }
-        } else {
-          print('That cell is already occupied. Please choose an empty cell.');
-          getNextCharacter(); // Ask for input again
-        }
-      } else {
-        print('Invalid input. Please enter a number between 1 and 9.');
-        getNextCharacter(); // Ask for input again
-      }
-    } catch (e) {
-      print('Invalid input. Please enter a number.');
-      getNextCharacter(); // Ask for input again
+  final currentPlayer = isXturn ? 'X' : 'O';
+  print('Player $currentPlayer\'s turn (Enter 1-9):');
+  
+  try {
+    String? input = stdin.readLineSync();
+    int? number = int.tryParse(input ?? '');
+    
+    if (number == null || number < 1 || number > 9) {
+      throw FormatException('Invalid input');
     }
-  } else {
-    print('No input received. Please try again.');
-    getNextCharacter(); // Ask for input again
+
+    int index = number - 1;
+    
+    if (values[index] == 'X' || values[index] == 'O') {
+      print('Cell already occupied!');
+      getNextMove();
+      return;
+    }
+
+    // Update game state
+    values[index] = currentPlayer;
+    moveCount++;
+    isXturn = !isXturn;
+    
+    clearScreen();
+    generateBoard();
+    
+    checkWinner(currentPlayer);
+    
+    if (!winner && moveCount < 9) {
+      getNextMove();
+    } else if (moveCount == 9) {
+      print('DRAW!');
+      askForRestart();
+    } else {
+      askForRestart();
+    }
+    
+  } catch (e) {
+    print('Invalid input. Please enter number 1-9');
+    getNextMove();
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-void askForRestart() {
-  print('Do you want to play again? (yes/no)');
-  String? playAgain = stdin.readLineSync()?.toLowerCase();
-  if (playAgain == 'yes') {
-    startGame();
-  } else {
-    print('Thank you for playing!');
-  }
+/// Display current game board
+void generateBoard() {
+  print('\n ${values[0]} | ${values[1]} | ${values[2]} ');
+  print('-----------');
+  print(' ${values[3]} | ${values[4]} | ${values[5]} ');
+  print('-----------');
+  print(' ${values[6]} | ${values[7]} | ${values[8]} \n');
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//clear console screen
+/// Clear console screen
 void clearScreen() {
   if (Platform.isWindows) {
-    print(Process.runSync("cls", [], runInShell: true).stdout);
+    print(Process.runSync('cls', [], runInShell: true).stdout);
   } else {
-    print(Process.runSync("clear", [], runInShell: true).stdout);
+    print(Process.runSync('clear', [], runInShell: true).stdout);
   }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//show current state of board
-void generateBoard() {
-  print(' | | ');
-  print('${values[0]}|${values[1]}|${values[2]}');
-  print('-----');
-  print('${values[3]}|${values[4]}|${values[5]}');
-  print('-----');
-  print('${values[6]}|${values[7]}|${values[8]}');
-  print(' | | ');
+/// Handle game restart logic
+void askForRestart() {
+  print('Play again? (yes/no)');
+  String? choice = stdin.readLineSync()?.toLowerCase();
+  
+  if (choice == 'yes') {
+    startGame();
+  } else {
+    print('Thanks for playing!');
+    exit(0);
+  }
 }
